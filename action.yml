@@ -1,10 +1,15 @@
 name: Code Analysis using Snyk
+description: "Performs code analysis using Snyk and generates a report."
 inputs:
-  SnykToken:
-    description: "Snyk API Token"
+  SNYK_SECRET:
+    description: "Snyk Service Account - Secret API Token"
     required: true
     default: "Missing"
-  Pipeline_Run:
+  SNYK_CLIENT_ID:
+    description: "Snyk Service Account - Client ID API Token"
+    required: true
+    default: "Missing"
+  PIPELINE_RUN:
     description: "Pipeline Run"
     required: true
     default: "snyk-report"
@@ -16,15 +21,14 @@ runs:
     - name: Setup API Endpoint for Snyk
       shell: bash
       env:
-        SNYK_TOKEN: ${{ inputs.SnykToken }}
         SNYK_API: "https://api.eu.snyk.io"
       run: npx snyk config set endpoint=$SNYK_API
     - name: Authenticate Snyk
       shell: bash
       env:
-        SNYK_TOKEN: ${{ inputs.SnykToken }}
-        SNYK_API: "https://api.eu.snyk.io"
-      run: npx snyk auth $SNYK_TOKEN
+        SNYK_SECRET: ${{ inputs.SNYK_SECRET }}
+        SNYK_CLIENT_ID: ${{ inputs.SNYK_CLIENT_ID }}
+      run: npx snyk auth --auth-type=oauth --client-secret=$SNYK_SECRET --client-id=$SNYK_CLIENT_ID
     - name: Install Snyk Tools
       shell: bash
       run: npm install snyk-to-html -g
@@ -33,14 +37,12 @@ runs:
       shell: bash
       run: snyk code test
       continue-on-error: true # To make sure that SARIF upload gets called
-      env:
-        SNYK_TOKEN: ${{ inputs.SNYK_TOKEN }}
     - name: Snyk Report
       shell: bash
-      run: snyk code test --json | snyk-to-html -o results-code-${{ inputs.Pipeline_Run }}.html
+      run: snyk code test --json | snyk-to-html -o results-code-${{ inputs.PIPELINE_RUN }}.html
       continue-on-error: true # To make sure that SARIF upload gets called
     - name: Upload Code Scanning Result
       uses: actions/upload-artifact@v4
       with:
         name: snyk-scanning-results
-        path: results-code-${{ inputs.Pipeline_Run }}.html
+        path: results-code-${{ inputs.PIPELINE_RUN }}.html
