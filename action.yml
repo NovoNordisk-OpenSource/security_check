@@ -18,6 +18,9 @@ runs:
   using: "composite"
   steps:
     - uses: actions/checkout@v4
+    - name: Setup snyk-to-html
+      shell: bash
+      run: npm install snyk-to-html -g
     - name: Setup API Endpoint for Snyk
       shell: bash
       env:
